@@ -1,4 +1,16 @@
 
+
+let keyimg = new Image()
+keyimg.src = "keySheet.png"
+let coinimg = new Image()
+coinimg.src = "coinSheet.png"
+let potionimg = new Image()
+potionimg.src = "potionSheet4.png"
+let bombimg = new Image()
+bombimg.src = "bomb.png"
+
+
+
 window.addEventListener('DOMContentLoaded', (event) => {
     const gamepadAPI = {
         controller: {},
@@ -262,6 +274,10 @@ window.addEventListener('DOMContentLoaded', (event) => {
             this.reflect = reflect
             this.strokeWidth = strokeWidth
             this.strokeColor = strokeColor
+        }
+        clone() {
+            let circ = new Circle(this.x, this.y, this.radius, this.color, this.xmom, this.ymom)
+            return circ
         }
         draw() {
             canvas_context.lineWidth = this.strokeWidth
@@ -770,7 +786,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         canvas.style.background = style
         window.setInterval(function () {
             main()
-        }, 17)
+        }, 25)
         document.addEventListener('keydown', (event) => {
             keysPressed[event.key] = true;
         });
@@ -785,6 +801,22 @@ window.addEventListener('DOMContentLoaded', (event) => {
             TIP_engine.y = YS_engine
             TIP_engine.body = TIP_engine
             // example usage: if(object.isPointInside(TIP_engine)){ take action }
+            if(started == 0){
+                if(easy.isPointInside(TIP_engine)){
+                    started = 1
+                    rooms[activeroom].enemies = []
+                }
+                if(hard.isPointInside(TIP_engine)){
+                    started = 1
+                    eyesack.speed-=.5
+                    eyesack.range-=5
+                    eyesack.health-=1
+                    eyesack.shotrate+=1
+                    eyesack.body.radius+=2
+                    eyesack.keys--
+                }
+
+            }
             window.addEventListener('pointermove', continued_stimuli);
         });
         window.addEventListener('pointerup', e => {
@@ -817,33 +849,109 @@ window.addEventListener('DOMContentLoaded', (event) => {
             }
         }
     }
-    function control(object, speed = 1) { // basic control for objects
-        if (typeof object.body != 'undefined') {
+    function vcontrol(object, speed = 1) {
+
+        if (typeof object != 'undefined') {
             if (keysPressed['w']) {
-                object.body.y -= speed
+                object.ymom -= speed
             }
             if (keysPressed['d']) {
-                object.body.x += speed
+                object.xmom += speed
             }
             if (keysPressed['s']) {
-                object.body.y += speed
+                object.ymom += speed
             }
             if (keysPressed['a']) {
-                object.body.x -= speed
+                object.xmom -= speed
             }
-        } else if (typeof object != 'undefined') {
+        }
+    }
+    function control(object, speed = 1) { // basic control for objects
+        let clone = object.clone()
+        if (typeof object != 'undefined') {
+            let wet = 0
+            for (let t = 0; t < rooms[activeroom].doors.length; t++) {
+                if (rooms[activeroom].doors[t].doesPerimeterTouch(object)) {
+                    if (typeof rooms[activeroom].links[t] == "number") {
+                        if (rooms[activeroom].locks[t] == 0 || (rooms[activeroom].locks[t] == 1 && eyesack.keys > 0)) {
+                            wet = 1
+                        }
+                    }
+                }
+            }
+
+
+
             if (keysPressed['w']) {
                 object.y -= speed
+                if (wet == 0) {
+                    if (!rooms[activeroom].body2.isPointInside(object)) {
+                        // object.x = clone.x
+                        object.y = clone.y
+                    }
+                }
             }
             if (keysPressed['d']) {
                 object.x += speed
+                if (wet == 0) {
+                    if (!rooms[activeroom].body2.isPointInside(object)) {
+                        object.x = clone.x
+                        // object.y = clone.y
+                    }
+                }
             }
             if (keysPressed['s']) {
                 object.y += speed
+                if (wet == 0) {
+                    if (!rooms[activeroom].body2.isPointInside(object)) {
+                        // object.x = clone.x
+                        object.y = clone.y
+                    }
+                }
             }
             if (keysPressed['a']) {
                 object.x -= speed
+                if (wet == 0) {
+                    if (!rooms[activeroom].body2.isPointInside(object)) {
+                        object.x = clone.x
+                        // object.y = clone.y
+                    }
+                }
             }
+            let dry = 0
+
+            if (wet == 1) {
+                for (let t = 0; t < rooms[activeroom].doors.length; t++) {
+                    if (rooms[activeroom].doors[t].doesPerimeterTouch(object)) {
+                        if (typeof rooms[activeroom].links[t] == "number") {
+                            if (rooms[activeroom].locks[t] == 0 || (rooms[activeroom].locks[t] == 1 && eyesack.keys > 0)) {
+                                dry = 1
+                            }
+                        }
+                    }
+                }
+            }
+            if (dry == 0) {
+                if (!rooms[activeroom].body2.isPointInside(object)) {
+                    object.x = clone.x
+                    object.y = clone.y
+                }
+
+            }
+            // if (typeof object.body != 'undefined') {
+            //     if (keysPressed['w']) {
+            //         object.body.y -= speed
+            //     }
+            //     if (keysPressed['d']) {
+            //         object.body.x += speed
+            //     }
+            //     if (keysPressed['s']) {
+            //         object.body.y += speed
+            //     }
+            //     if (keysPressed['a']) {
+            //         object.body.x -= speed
+            //     }
+            // } else 
         }
     }
     function getRandomLightColor() { // random color that will be visible on  black background
@@ -880,10 +988,340 @@ window.addEventListener('DOMContentLoaded', (event) => {
         return (new Shape(shape_array))
     }
 
+
+    class Enemy {
+        constructor(x, y, type) {
+            this.body = new Circle(x, y, 20, "#FF1144")
+            this.maxradius = this.body.radius
+            this.speed = 3
+            this.moving = 0
+            this.type = type
+            if (this.type == 0) {
+                this.body.color = "gold"
+            }
+            if (this.type == 2) {
+                this.body.color = "orange"
+            }
+            if (this.type == 1) {
+                this.body.color = "red"
+            }
+            if (this.type == 4) {
+                this.body.color = "purple"
+            }
+            if (this.type == 5) {
+                this.body.color = "pink"
+            }
+            this.shotcounter = 0
+            this.shotrate = 20
+            this.shots = []
+            this.shotspeed = 5
+            this.range = 100
+            this.health = 100
+            this.maxhealth = 100
+            this.marked = 0
+        }
+        shoot() {
+            let variate = Math.floor(Math.random() * 4)
+            if (this.shotcounter > this.shotrate) {
+                if (variate == 1) {
+                    let shot = new Circle(this.body.x, this.body.y, 4, "#AA0000", 0, -this.shotspeed)
+                    shot.range = this.range
+                    this.shots.push(shot)
+                    this.shotcounter = 0
+                    return
+                }
+                if (variate == 2) {
+                    let shot = new Circle(this.body.x, this.body.y, 4, "#AA0000", -this.shotspeed, 0)
+                    shot.range = this.range
+                    this.shots.push(shot)
+                    this.shotcounter = 0
+                    return
+                }
+                if (variate == 0) {
+                    let shot = new Circle(this.body.x, this.body.y, 4, "#AA0000", 0, this.shotspeed)
+                    shot.range = this.range
+                    this.shots.push(shot)
+                    this.shotcounter = 0
+                    return
+                }
+                if (variate == 3) {
+                    let shot = new Circle(this.body.x, this.body.y, 4, "#AA0000", this.shotspeed, 0)
+                    shot.range = this.range
+                    this.shots.push(shot)
+                    this.shotcounter = 0
+                    return
+                }
+            } else {
+                this.shotcounter++
+            }
+        }
+        aimshoot() {
+            let angle = (new LineOP(eyesack.body, this.body)).angle()
+            if (this.shotcounter > this.shotrate * 3) {
+                let shot = new Circle(this.body.x, this.body.y, 6, "#AA00FF", (this.shotspeed * Math.cos(angle)) * .8, (this.shotspeed * Math.sin(angle)) * .8)
+                shot.range = this.range
+                this.shots.push(shot)
+                this.shotcounter = 0
+            } else {
+                this.shotcounter++
+            }
+        }
+        bigaimshoot() {
+            let angle = (new LineOP(eyesack.body, this.body)).angle()
+            if (this.shotcounter > this.shotrate * 30) {
+                for (let t = 0; t < 10; t++) {
+                    let shot = new Circle(this.body.x, this.body.y, 6, "#AA00FF", (this.shotspeed * Math.cos(angle)) * .8, (this.shotspeed * Math.sin(angle)) * .8)
+                    shot.xmom += (Math.random() - .5) * (this.shotspeed * .3)
+                    shot.ymom += (Math.random() - .5) * (this.shotspeed * .3)
+                    shot.range = this.range
+                    this.shots.push(shot)
+                    this.shotcounter = 0
+                }
+            } else {
+                this.shotcounter++
+            }
+        }
+        bigshoot() {
+            let variate = Math.floor(Math.random() * 4)
+            if (this.shotcounter > this.shotrate * 10) {
+                if (variate == 1) {
+                    for (let t = 0; t < 10; t++) {
+                        let shot = new Circle(this.body.x, this.body.y, 4, "#AA0000", 0, -this.shotspeed)
+                        shot.xmom += (Math.random() - .5) * (this.shotspeed * .8)
+                        shot.ymom += (Math.random() - .5) * (this.shotspeed * .8)
+                        shot.range = this.range
+                        this.shots.push(shot)
+                        this.shotcounter = 0
+                    }
+                    return
+                }
+                if (variate == 2) {
+                    for (let t = 0; t < 10; t++) {
+                        let shot = new Circle(this.body.x, this.body.y, 4, "#AA0000", -this.shotspeed, 0)
+                        shot.xmom += (Math.random() - .5) * (this.shotspeed * .8)
+                        shot.ymom += (Math.random() - .5) * (this.shotspeed * .8)
+                        shot.range = this.range
+                        this.shots.push(shot)
+                        this.shotcounter = 0
+                    }
+                    return
+                }
+                if (variate == 0) {
+                    for (let t = 0; t < 10; t++) {
+                        let shot = new Circle(this.body.x, this.body.y, 4, "#AA0000", 0, this.shotspeed)
+                        shot.xmom += (Math.random() - .5) * (this.shotspeed * .8)
+                        shot.ymom += (Math.random() - .5) * (this.shotspeed * .8)
+                        shot.range = this.range
+                        this.shots.push(shot)
+                        this.shotcounter = 0
+                    }
+                    return
+                }
+                if (variate == 3) {
+                    for (let t = 0; t < 10; t++) {
+                        let shot = new Circle(this.body.x, this.body.y, 4, "#AA0000", this.shotspeed, 0)
+                        shot.xmom += (Math.random() - .5) * (this.shotspeed * .8)
+                        shot.ymom += (Math.random() - .5) * (this.shotspeed * .8)
+                        shot.range = this.range
+                        this.shots.push(shot)
+                        this.shotcounter = 0
+                    }
+                    return
+                }
+            } else {
+                this.shotcounter++
+            }
+        }
+        draw() {
+            this.bodyclone = this.body.clone()
+            if (this.type == 0 || this.type == 2) {
+                let xpath = this.body.x - eyesack.body.x
+                let ypath = this.body.y - eyesack.body.y
+                if (Math.abs(xpath) > Math.abs(ypath)) {
+                    if (xpath < 0) {
+                        this.body.x += this.speed
+                    } else {
+                        this.body.x -= this.speed
+                    }
+                    if (!rooms[activeroom].body2.isPointInside(this.body)) {
+                        this.body.x = this.bodyclone.x
+                    }
+                } else {
+                    if (ypath < 0) {
+                        this.body.y += this.speed
+                    } else {
+                        this.body.y -= this.speed
+                    }
+                    if (!rooms[activeroom].body2.isPointInside(this.body)) {
+                        this.body.y = this.bodyclone.y
+                    }
+                }
+            }
+            for (let t = 0; t < eyesack.shots.length; t++) {
+                if (eyesack.shots[t].doesPerimeterTouch(this.body)) {
+                    this.body.xmom = eyesack.shots[t].xmom
+                    this.body.ymom = eyesack.shots[t].ymom
+                    this.body.xmom += (Math.random() - .5) * this.speed
+                    this.body.ymom += (Math.random() - .5) * this.speed
+                    this.moving = 10
+                    this.body.xmom /= 3
+                    this.body.ymom /= 3
+                    this.body.move()
+                    if(this.health > 0){
+                        eyesack.shots[t].range = -1
+                    }
+                    this.health -= eyesack.attack
+                    if (this.health <= 0) {
+                        this.marked = 1
+                    }
+                }
+            }
+            for (let t = 0; t < rooms[activeroom].enemies.length; t++) {
+                if (rooms[activeroom].enemies[t].body != (this.body)) {
+                    if (rooms[activeroom].enemies[t].body.doesPerimeterTouch(this.body)) {
+                        let link = new LineOP(rooms[activeroom].enemies[t].body, this.body)
+                        this.body.xmom = -Math.cos(link.angle()) * this.speed
+                        this.body.ymom = -Math.sin(link.angle()) * this.speed
+                        this.moving = 2
+                    }
+                }
+            }
+
+            if (this.moving > 0) {
+                this.body.move()
+                if (!rooms[activeroom].body2.isPointInside(this.body)) {
+                    this.body.x = this.bodyclone.x
+                    this.body.y = this.bodyclone.y
+                }
+                this.moving--
+            }
+            if (this.type == 1 || this.type == 2) {
+                this.shoot()
+            }
+            if (this.type == 3) {
+                if (this.health == this.maxhealth) {
+                    this.bigshoot()
+                }
+                this.body.radius = (this.maxradius * (this.health / this.maxhealth)) + 7
+                this.health *= 1.00001
+                this.health += .5
+
+                if (this.health > this.maxhealth) {
+                    this.health = this.maxhealth
+                }
+            }
+            if (this.type == 4) {
+                this.aimshoot()
+            }
+            if (this.type == 5) {
+                this.bigaimshoot()
+            }
+
+            for (let t = 0; t < this.shots.length; t++) {
+                this.shots[t].move()
+                this.shots[t].draw()
+                this.shots[t].range--
+            }
+            for (let t = 0; t < this.shots.length; t++) {
+                if (!rooms[activeroom].body2.isPointInside(this.shots[t])) {
+                    this.shots.splice(t, 1)
+                }
+            }
+            for (let t = 0; t < this.shots.length; t++) {
+                if (this.shots[t].range < 0) {
+                    this.shots.splice(t, 1)
+                }
+            }
+            this.body.draw()
+        }
+
+    }
+
+
+    class Pickup {
+        constructor(x, y, type) {
+            this.body = new Circle(x, y, 12, "transparent")
+            this.type = type
+            this.framer = 0
+            this.maxer = 0
+            this.slower = 2
+            this.slow = 0
+        }
+        draw() {
+            if (this.type == 0) {
+                this.maxer = 32
+                let width = keyimg.width / this.maxer
+                this.slow++
+                if (this.slow % this.slower == 0) {
+                    this.framer++
+                    this.framer %= this.maxer
+                }
+                if (this.marked != 1) {
+                    canvas_context.drawImage(keyimg, this.framer * width, 0, width, keyimg.height, this.body.x - this.body.radius, this.body.y - this.body.radius, this.body.radius * 3, this.body.radius * 3)
+                    if (this.body.doesPerimeterTouch(eyesack.body)) {
+                        eyesack.keys++
+                        this.marked = 1
+                    }
+                }
+            }
+            if (this.type == 1) {
+                this.maxer = 12
+                let width = coinimg.width / this.maxer
+                this.slow++
+                if (this.slow % this.slower == 0) {
+                    this.framer++
+                    this.framer %= this.maxer
+                }
+                if (this.marked != 1) {
+                    canvas_context.drawImage(coinimg, this.framer * width, 0, width, coinimg.height, this.body.x - this.body.radius, this.body.y - this.body.radius, this.body.radius * 1.5, this.body.radius * 1.5)
+                    if (this.body.doesPerimeterTouch(eyesack.body)) {
+                        eyesack.coins++
+                        this.marked = 1
+                    }
+                }
+            }
+            if (this.type == 2) {
+                this.maxer = 28
+                let width = potionimg.width / this.maxer
+                this.slow++
+                if (this.slow % this.slower == 0) {
+                    this.framer++
+                    this.framer %= this.maxer
+                }
+                if (this.marked != 1) {
+                    canvas_context.drawImage(potionimg, this.framer * width, 0, width, potionimg.height, this.body.x - this.body.radius, this.body.y - this.body.radius, this.body.radius * 3, this.body.radius * 3)
+                    if (this.body.doesPerimeterTouch(eyesack.body)) {
+                        eyesack.health++
+                        this.marked = 1
+                    }
+                }
+            }
+            if (this.type == 3) {
+                this.maxer = 1
+                let width = bombimg.width / this.maxer
+                this.slow++
+                if (this.slow % this.slower == 0) {
+                    this.framer++
+                    this.framer %= this.maxer
+                }
+                if (this.marked != 1) {
+                    canvas_context.drawImage(bombimg, this.framer * width, 0, width, bombimg.height, this.body.x - this.body.radius, this.body.y - this.body.radius, this.body.radius * 2, this.body.radius * 2)
+                    if (this.body.doesPerimeterTouch(eyesack.body)) {
+                        eyesack.bombs++
+                        this.marked = 1
+                    }
+                }
+            }
+        }
+    }
+
     class Room {
         constructor() {
-            this.body1 = new Rectangle(100, 100, canvas.width - 200, canvas.height - 200, "#CC0000")
-            this.body2 = new Rectangle(110, 110, canvas.width - 220, canvas.height - 220, "#330000")
+            this.drawn = 0
+            this.items = []
+            this.enemies = []
+            this.body1 = new Rectangle(100, 100, canvas.width - 200, canvas.height - 200, "#CC5500")
+            this.body2 = new Rectangle(110, 110, canvas.width - 220, canvas.height - 220, "#553322")
             this.walls = []
             this.wall1 = new Line(0, 0, this.body1.x + 5, this.body1.y + 5, "red", 5)
             this.wall2 = new Line(1280, 0, this.body1.x + this.body1.width - 5, this.body1.y + 5, "red", 5)
@@ -902,30 +1340,45 @@ window.addEventListener('DOMContentLoaded', (event) => {
             this.doors.push(this.door4)
             this.index = roomcounter
             this.details = []
-            for(let t = 0;t<5;t++){
+            this.locks = []
+            for (let t = 0; t < 5; t++) {
                 this.detail = new Line(this.body2.x + (Math.random() * this.body2.width), this.body2.y + (Math.random() * this.body2.height), this.body2.x + (Math.random() * this.body2.width), this.body2.y + (Math.random() * this.body2.height), getRandomColor() + "44", 5 + (Math.random() * 8))
                 this.details.push(this.detail)
             }
-             rooms.push(this)
+            rooms.push(this)
             for (let t = 0; t < 4; t++) {
                 if (rooms.length < 1000) {
-                    if (Math.random() < .3-(rooms.length/3333)) {
+                    if (Math.random() < .3 - (rooms.length / 3333)) {
                         if (this.links.length < 4) {
                             roomcounter++
                             this.links.push(roomcounter)
+                            this.locks.push(Math.floor(Math.random() * 2))
                             let room = new Room()
                             if (this.links.length == 1) {
                                 room.links[1] = this.index
+                                room.locks[1] = 0
                             } else if (this.links.length == 2) {
                                 room.links[0] = this.index
+                                room.locks[0] = 0
                             } else if (this.links.length == 3) {
                                 room.links[3] = this.index
+                                room.locks[3] = 0
                             } else if (this.links.length == 4) {
                                 room.links[2] = this.index
+                                room.locks[2] = 0
                             }
                         }
                     }
                 }
+            }
+            for (let t = 0; t < Math.random() * 10; t++) {
+                let pickup = new Pickup((Math.random() * (this.body2.width - 40)) + this.body2.x + 20, (Math.random() * (this.body2.height - 40)) + this.body2.y + 20, Math.floor(Math.random() * 4))
+                this.items.push(pickup)
+            }
+            for (let t = 0; t < Math.random() * 4; t++) {
+                this.enemyhas = 1
+                let migo = new Enemy((Math.random() * (this.body2.width - 40)) + this.body2.x + 20, (Math.random() * (this.body2.height - 40)) + this.body2.y + 20, Math.floor(Math.random() * 6))
+                this.enemies.push(migo)
             }
         }
         draw() {
@@ -934,9 +1387,39 @@ window.addEventListener('DOMContentLoaded', (event) => {
                 console.log(this.index, "i")
             }
             if (this.index == activeroom) {
+                if (this.drawn == 0) {
+                    let roomlength = rooms.length
+                    for (let t = 0; t < 4; t++) {
+                        if (rooms.length < roomlength + 100) {
+                            if (Math.random() < .3 - (rooms.length / 3333)) {
+                                if (this.links.length < 4) {
+                                    roomcounter++
+                                    this.links.push(roomcounter)
+                                    this.locks.push(Math.floor(Math.random() * 2))
+                                    let room = new Room()
+                                    if (this.links.length == 1) {
+                                        room.links[1] = this.index
+                                        room.locks[1] = 0
+                                    } else if (this.links.length == 2) {
+                                        room.links[0] = this.index
+                                        room.locks[0] = 0
+                                    } else if (this.links.length == 3) {
+                                        room.links[3] = this.index
+                                        room.locks[3] = 0
+                                    } else if (this.links.length == 4) {
+                                        room.links[2] = this.index
+                                        room.locks[2] = 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    this.drawn = 1
+                }
                 if (keysPressed[';']) {
                     console.log(this.links)
                 }
+
                 this.body1.draw()
                 this.body2.draw()
                 for (let t = 0; t < this.walls.length; t++) {
@@ -944,29 +1427,81 @@ window.addEventListener('DOMContentLoaded', (event) => {
                 }
                 for (let t = 0; t < this.links.length; t++) {
                     if (typeof this.links[t] == "number") {
+                        if (this.locks[t] == 1) {
+                            this.doors[t].color = "white"
+                        } else {
+                            this.doors[t].color = "#333333"
+                        }
                         this.doors[t].draw()
                         if (this.doors[t].isPointInside(eyesack.body)) {
-                            eyesack.charge++
-                            eyesack.roomstorage = activeroom
-                            activeroom = this.links[t]
-                            if (t == 0) {
-                                eyesack.body.x = 640
-                                eyesack.body.y = 580
-                            } else if (t == 1) {
-                                eyesack.body.x = 640
-                                eyesack.body.y = 120
-                            } else if (t == 2) {
-                                eyesack.body.x = 1160
-                                eyesack.body.y = 360
-                            } else if (t == 3) {
-                                eyesack.body.x = 120
-                                eyesack.body.y = 360
+                            if (this.locks[t] != 1) {
+                                eyesack.shots = []
+                                eyesack.charge++
+                                eyesack.roomstorage = activeroom
+                                activeroom = this.links[t]
+                                if (t == 0) {
+                                    eyesack.body.x = 640
+                                    eyesack.body.y = 580
+                                } else if (t == 1) {
+                                    eyesack.body.x = 640
+                                    eyesack.body.y = 120
+                                } else if (t == 2) {
+                                    eyesack.body.x = 1160
+                                    eyesack.body.y = 360
+                                } else if (t == 3) {
+                                    eyesack.body.x = 120
+                                    eyesack.body.y = 360
+                                }
+                            } else {
+                                if (eyesack.keys > 0) {
+                                    eyesack.shots = []
+
+                                    eyesack.charge++
+                                    eyesack.roomstorage = activeroom
+                                    activeroom = this.links[t]
+                                    if (t == 0) {
+                                        eyesack.body.x = 640
+                                        eyesack.body.y = 580
+                                    } else if (t == 1) {
+                                        eyesack.body.x = 640
+                                        eyesack.body.y = 120
+                                    } else if (t == 2) {
+                                        eyesack.body.x = 1160
+                                        eyesack.body.y = 360
+                                    } else if (t == 3) {
+                                        eyesack.body.x = 120
+                                        eyesack.body.y = 360
+                                    }
+                                    eyesack.keys--
+                                    this.locks[t] = 0
+                                }
                             }
                         }
                     }
                 }
-                for(let t = 0;t<this.details.length;t++){
+                for (let t = 0; t < this.details.length; t++) {
                     this.details[t].draw()
+                }
+
+                for (let t = 0; t < this.items.length; t++) {
+                    this.items[t].draw()
+                }
+                for (let t = 0; t < this.enemies.length; t++) {
+                    this.enemies[t].draw()
+                }
+                for (let t = 0; t < this.enemies.length; t++) {
+                    if (this.enemies[t].marked == 1) {
+                        this.enemies.splice(t, 1)
+                    }
+                }
+            }
+            if (this.enemyhas == 1) {
+                if (this.enemies.length == 0) {
+                    this.enemyhas = 0
+                    let pickup = new Pickup((Math.random() * (this.body2.width - 40)) + this.body2.x + 20, (Math.random() * (this.body2.height - 40)) + this.body2.y + 20, Math.floor(Math.random() * 3))
+                    this.items.push(pickup)
+
+
                 }
             }
         }
@@ -974,18 +1509,94 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
     class Player {
         constructor() {
+            this.hitstun = 0
             this.chargebar = new Rectangle(0, 0, 50, 100, "#00FF00")
             this.notch = new Rectangle(0, 50, 35, 1, "black")
             this.roomstorage = 0
             this.body = new Circle(640, 360, 20, "blue")
             this.speed = 5
             this.charge = 2
+            this.keys = 2
+            this.health = 4
+            this.bombs = 1
+            this.coins = 0
+            this.shotcounter = 0
+            this.shotrate = 20
+            this.shots = []
+            this.shotspeed = 7
+            this.range = 100
+            this.attack = 35
+            this.bombtimer = 0
+        }
+        shoot() {
+            if (this.shotcounter > this.shotrate) {
+                if (keysPressed['i']) {
+                    let shot = new Circle(this.body.x, this.body.y, 4, "cyan", 0, -this.shotspeed)
+                    shot.range = this.range
+                    vcontrol(shot, this.speed * .5)
+                    this.shots.push(shot)
+                    this.shotcounter = 0
+                    return
+                }
+                if (keysPressed['j']) {
+                    let shot = new Circle(this.body.x, this.body.y, 4, "cyan", -this.shotspeed, 0)
+                    shot.range = this.range
+                    vcontrol(shot, this.speed * .5)
+                    this.shots.push(shot)
+                    this.shotcounter = 0
+                    return
+                }
+                if (keysPressed['k']) {
+                    let shot = new Circle(this.body.x, this.body.y, 4, "cyan", 0, this.shotspeed)
+                    shot.range = this.range
+                    vcontrol(shot, this.speed * .5)
+                    this.shots.push(shot)
+                    this.shotcounter = 0
+                    return
+                }
+                if (keysPressed['l']) {
+                    let shot = new Circle(this.body.x, this.body.y, 4, "cyan", this.shotspeed, 0)
+                    shot.range = this.range
+                    vcontrol(shot, this.speed * .5)
+                    this.shots.push(shot)
+                    this.shotcounter = 0
+                    return
+                }
+            } else {
+                this.shotcounter++
+            }
+
+        }
+        bomb(){
+            if(this.bombtimer <= 0){
+                if(this.bombs> 0){
+                    for(let t = 0;t<60;t++){
+                        let shot = new Circle(this.body.x, this.body.y, 5, "red", (Math.random()-.5)*10,  (Math.random()-.5)*10)  
+                        shot.range = this.range
+                        this.shots.push(shot)
+                    }
+                    this.bombs--
+                    this.bombtimer = 30
+                }
+            }
+            
         }
         draw() {
+            if(keysPressed['e']){
+                this.bomb()
+            }
+            this.bombtimer--
+            this.shoot()
             canvas_context.font = "20px arial"
             canvas_context.fillStyle = "white"
-            canvas_context.fillText(`Active room: ${activeroom}`, 100, 50)
-            canvas_context.fillText(`Stored Room: ${this.roomstorage}`, 100, 70)
+            canvas_context.fillText(`Active room: ${activeroom}`, 100, 20)
+            canvas_context.fillText(`Stored Room: ${this.roomstorage}`, 100, 40)
+            canvas_context.fillText(`Keys: ${this.keys}`, 100, 60)
+
+
+            canvas_context.fillText(`Bombs: ${this.bombs}`, 700, 20)
+            canvas_context.fillText(`Coins: ${this.coins}`, 700, 40)
+            canvas_context.fillText(`Health: ${this.health}`, 700, 60)
             this.chargebar.height = this.charge * 50
             this.chargebar.height = Math.min(this.chargebar.height, 100)
             this.chargebar.draw()
@@ -998,11 +1609,60 @@ window.addEventListener('DOMContentLoaded', (event) => {
                     this.charge = 0
                 }
             }
+            for (let t = 0; t < this.shots.length; t++) {
+                this.shots[t].move()
+                this.shots[t].draw()
+                this.shots[t].range--
+            }
+            for (let t = 0; t < this.shots.length; t++) {
+                if (!rooms[activeroom].body2.isPointInside(this.shots[t])) {
+                    this.shots.splice(t, 1)
+                }
+            }
+            for (let t = 0; t < this.shots.length; t++) {
+                if (this.shots[t].range < 0) {
+                    this.shots.splice(t, 1)
+                }
+            }
+            if(this.hitstun <= 0){
+            for (let t = 0; t < rooms[activeroom].enemies.length; t++) {
+                for (let k = 0; k < rooms[activeroom].enemies[t].shots.length; k++) {
+                    if (rooms[activeroom].enemies[t].shots[k].doesPerimeterTouch(this.body)) {
+                        this.health--
+                        rooms[activeroom].enemies[t].shots[k].range = -1
+                        this.hitstun = 100
+                    }
+                }
+                if (rooms[activeroom].enemies[t].body.doesPerimeterTouch(this.body)) {
+                    this.health--
+                    this.hitstun = 100
+                }
+            }
+            this.body.color = "blue"
+            }else{
+
+            for (let t = 0; t < rooms[activeroom].enemies.length; t++) {
+                for (let k = 0; k < rooms[activeroom].enemies[t].shots.length; k++) {
+                    if (rooms[activeroom].enemies[t].shots[k].doesPerimeterTouch(this.body)) {
+                        rooms[activeroom].enemies[t].shots[k].range = -1
+                    }
+                }
+            }
+                this.hitstun--
+                if(this.hitstun%20 < 5){
+                    this.body.color = "blue"
+                }else if(this.hitstun%20 < 10){
+                    this.body.color = "#0055FF"
+                }else if(this.hitstun%20 < 15){
+                    this.body.color = "#00AAFF"
+                }else{
+                    this.body.color = "#00CCFF"
+                }
+            }
         }
     }
 
-
-
+    let key = new Pickup(200, 200, 1)
 
     let setup_canvas = document.getElementById('canvas') //getting canvas from document
 
@@ -1016,14 +1676,36 @@ window.addEventListener('DOMContentLoaded', (event) => {
     let room1 = new Room()
     // let room2 = new Room()
     let eyesack = new Player()
+    // let enemy = new Enemy(100, 100)
+    let started = 0
+    let easy = new Rectangle(200, 200, 200, 100, "#00FF00")
+    let hard = new Rectangle(700, 200, 200, 100, "#FF0000")
 
     function main() {
         canvas_context.clearRect(0, 0, canvas.width, canvas.height)  // refreshes the image
-        gamepadAPI.update() //checks for button presses/stick movement on the connected controller)
-        // game code goes here
-        for (let t = 0; t < rooms.length; t++) {
-            rooms[t].draw()
+        gamepadAPI.update()
+        if (started == 1) { 
+            // for (let t = 0; t < rooms.length; t++) {
+                rooms[activeroom].draw()
+            // }
+            eyesack.draw()
+            if(eyesack.health<=0){
+                 rooms = []
+                 activeroom = 0
+                 roomcounter = 0
+                 room1 = new Room()
+                 eyesack = new Player()
+                 started = 0
+            }
+        }else{
+            easy.draw()
+            hard.draw()
+            canvas_context.font = "50px arial"
+            canvas_context.fillStyle = "Black"
+            canvas_context.fillText("Easy", easy.x +50, easy.y + 50)
+            canvas_context.fillText("Hard", hard.x +50, hard.y + 50)
         }
-        eyesack.draw()
+        // key.draw()
+        // enemy.draw()
     }
 })

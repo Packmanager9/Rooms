@@ -4,10 +4,51 @@ let keyimg = new Image()
 keyimg.src = "keySheet.png"
 let coinimg = new Image()
 coinimg.src = "coinSheet.png"
+let coinimg5 = new Image()
+coinimg5.src = "5coinsheet.png"
 let potionimg = new Image()
 potionimg.src = "potionSheet4.png"
 let bombimg = new Image()
 bombimg.src = "bomb.png"
+let heartimg = new Image()
+heartimg.src = "heartSheet.png"
+
+let firerateimg = new Image()
+firerateimg.src = "firerateicon.png"
+
+let bulletspeedicon = new Image()
+bulletspeedicon.src = "bulletspeedicon.png"
+
+let attackimg = new Image()
+attackimg.src = "attackicon.png"
+
+let speedimg = new Image()
+speedimg.src = "speedicon.png"
+
+let coinaudio = new Audio()
+coinaudio.src = "coin.mp3"
+
+let painaudio = new Audio()
+painaudio.src = "pain.mp3"
+
+let hitaudio = new Audio()
+hitaudio.src = "hit.mp3"
+
+let dooraudio = new Audio()
+dooraudio.src = "door.mp3"
+
+let potionaudio = new Audio()
+potionaudio.src = "potion.mp3"
+
+let keyaudio = new Audio()
+keyaudio.src = "key.wav"
+
+let blastaudio = new Audio()
+blastaudio.src = "blast.wav"
+
+
+let bombaudio = new Audio()
+bombaudio.src = "bomb.wav"
 
 
 
@@ -801,18 +842,19 @@ window.addEventListener('DOMContentLoaded', (event) => {
             TIP_engine.y = YS_engine
             TIP_engine.body = TIP_engine
             // example usage: if(object.isPointInside(TIP_engine)){ take action }
-            if(started == 0){
-                if(easy.isPointInside(TIP_engine)){
+            if (started == 0) {
+                if (easy.isPointInside(TIP_engine)) {
                     started = 1
                     rooms[activeroom].enemies = []
                 }
-                if(hard.isPointInside(TIP_engine)){
+                if (hard.isPointInside(TIP_engine)) {
+                    painaudio.play()
                     started = 1
-                    eyesack.speed-=.5
-                    eyesack.range-=5
-                    eyesack.health-=1
-                    eyesack.shotrate+=1
-                    eyesack.body.radius+=2
+                    eyesack.speed -= .5
+                    eyesack.range -= 5
+                    eyesack.health -= 1
+                    eyesack.shotrate += 1
+                    eyesack.body.radius += 2
                     eyesack.keys--
                 }
 
@@ -832,7 +874,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         }
     }
     function gamepad_control(object, speed = 1) { // basic control for objects using the controler
-        console.log(gamepadAPI.axesStatus[1] * gamepadAPI.axesStatus[0])
+        // console.log(gamepadAPI.axesStatus[1] * gamepadAPI.axesStatus[0])
         if (typeof object.body != 'undefined') {
             if (typeof (gamepadAPI.axesStatus[1]) != 'undefined') {
                 if (typeof (gamepadAPI.axesStatus[0]) != 'undefined') {
@@ -845,6 +887,25 @@ window.addEventListener('DOMContentLoaded', (event) => {
                 if (typeof (gamepadAPI.axesStatus[0]) != 'undefined') {
                     object.x += (gamepadAPI.axesStatus[0] * speed)
                     object.y += (gamepadAPI.axesStatus[1] * speed)
+                }
+            }
+        }
+    }
+    function vgcontrol(object, speed = 1) {
+        if (typeof object != 'undefined') {
+            if (typeof object.body != 'undefined') {
+                if (typeof (gamepadAPI.axesStatus[1]) != 'undefined') {
+                    if (typeof (gamepadAPI.axesStatus[0]) != 'undefined') {
+                        object.body.xmom += (gamepadAPI.axesStatus[2] * speed)
+                        object.body.ymom += (gamepadAPI.axesStatus[1] * speed)
+                    }
+                }
+            } else if (typeof object != 'undefined') {
+                if (typeof (gamepadAPI.axesStatus[1]) != 'undefined') {
+                    if (typeof (gamepadAPI.axesStatus[0]) != 'undefined') {
+                        object.xmom += (gamepadAPI.axesStatus[0] * speed)
+                        object.ymom += (gamepadAPI.axesStatus[1] * speed)
+                    }
                 }
             }
         }
@@ -866,6 +927,128 @@ window.addEventListener('DOMContentLoaded', (event) => {
             }
         }
     }
+
+    function gcontrol(object, speed = 1) { // basic control for objects
+        let clone = object.clone()
+        let wet = 0
+        if (typeof object != 'undefined') {
+            for (let t = 0; t < rooms[activeroom].doors.length; t++) {
+                if (rooms[activeroom].doors[t].doesPerimeterTouch(object)) {
+                    if (typeof rooms[activeroom].links[t] == "number") {
+                        if (rooms[activeroom].locks[t] == 0 || (rooms[activeroom].locks[t] == 1 && eyesack.keys > 0)) {
+                            wet = 1
+                        }
+                    }
+                }
+            }
+                if (typeof object != 'undefined') {
+                        if (typeof (gamepadAPI.axesStatus[1]) != 'undefined') {
+                            if (typeof (gamepadAPI.axesStatus[0]) != 'undefined') {
+                                object.x += (gamepadAPI.axesStatus[0] * speed)
+                                if (wet == 0) {
+                                    if (!rooms[activeroom].body2.isPointInside(object)) {
+                                        object.x = clone.x
+                                    }
+                                }
+                                object.y += (gamepadAPI.axesStatus[1] * speed)
+                                if (wet == 0) {
+                                    if (!rooms[activeroom].body2.isPointInside(object)) {
+                                        object.y = clone.y
+                                    }
+                                }
+                            }
+                        }
+                    }
+                
+                
+                if (wet == 0) {
+                    if (!rooms[activeroom].body2.isPointInside(object)) {
+                        object.y = clone.y
+                    }
+                }
+            }
+            let dry = 0
+            if (wet == 1) {
+                for (let t = 0; t < rooms[activeroom].doors.length; t++) {
+                    if (rooms[activeroom].doors[t].doesPerimeterTouch(object)) {
+                        if (typeof rooms[activeroom].links[t] == "number") {
+                            if (rooms[activeroom].locks[t] == 0 || (rooms[activeroom].locks[t] == 1 && eyesack.keys > 0)) {
+                                dry = 1
+                            }
+                        }
+                    }
+                }
+            
+            if (dry == 0) {
+                if (!rooms[activeroom].body2.isPointInside(object)) {
+                    object.x = clone.x
+                    object.y = clone.y
+                }
+            }
+        }
+    }
+    
+    function scontrol(object, speed = 1) { // basic control for objects
+        let clone = object.clone()
+        let wet = 0
+        if (typeof object != 'undefined') {
+            for (let t = 0; t < rooms[activeroom].doors.length; t++) {
+                if (rooms[activeroom].doors[t].doesPerimeterTouch(object)) {
+                    if (typeof rooms[activeroom].links[t] == "number") {
+                        if (rooms[activeroom].locks[t] == 0 || (rooms[activeroom].locks[t] == 1 && eyesack.keys > 0)) {
+                            wet = 1
+                        }
+                    }
+                }
+            }
+                if (typeof object != 'undefined') {
+                        if (typeof (gamepadAPI.axesStatus[1]) != 'undefined') {
+                            if (typeof (gamepadAPI.axesStatus[0]) != 'undefined') {
+                                object.x += (gamepadAPI.axesStatus[0] * speed)
+                                if (wet == 0) {
+                                    if (!rooms[activeroom].body2.isPointInside(object)) {
+                                        // object.x = clone.x
+                                    }
+                                }
+                                object.y += (gamepadAPI.axesStatus[1] * speed)
+                                if (wet == 0) {
+                                    if (!rooms[activeroom].body2.isPointInside(object)) {
+                                        // object.y = clone.y
+                                    }
+                                }
+                            }
+                        }
+                    }
+                
+                
+                if (wet == 0) {
+                    if (!rooms[activeroom].body2.isPointInside(object)) {
+                        // object.y = clone.y
+                    }
+                }
+            }
+            let dry = 0
+            if (wet == 1) {
+                for (let t = 0; t < rooms[activeroom].doors.length; t++) {
+                    if (rooms[activeroom].doors[t].doesPerimeterTouch(object)) {
+                        if (typeof rooms[activeroom].links[t] == "number") {
+                            if (rooms[activeroom].locks[t] == 0 || (rooms[activeroom].locks[t] == 1 && eyesack.keys > 0)) {
+                                dry = 1
+                            }
+                        }
+                    }
+                }
+            
+            if (dry == 0) {
+                if (!rooms[activeroom].body2.isPointInside(object)) {
+                    // object.x = clone.x
+                    // object.y = clone.y
+                }
+            }
+        }
+    }
+    
+    
     function control(object, speed = 1) { // basic control for objects
         let clone = object.clone()
         if (typeof object != 'undefined') {
@@ -879,9 +1062,6 @@ window.addEventListener('DOMContentLoaded', (event) => {
                     }
                 }
             }
-
-
-
             if (keysPressed['w']) {
                 object.y -= speed
                 if (wet == 0) {
@@ -919,7 +1099,6 @@ window.addEventListener('DOMContentLoaded', (event) => {
                 }
             }
             let dry = 0
-
             if (wet == 1) {
                 for (let t = 0; t < rooms[activeroom].doors.length; t++) {
                     if (rooms[activeroom].doors[t].doesPerimeterTouch(object)) {
@@ -936,22 +1115,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
                     object.x = clone.x
                     object.y = clone.y
                 }
-
             }
-            // if (typeof object.body != 'undefined') {
-            //     if (keysPressed['w']) {
-            //         object.body.y -= speed
-            //     }
-            //     if (keysPressed['d']) {
-            //         object.body.x += speed
-            //     }
-            //     if (keysPressed['s']) {
-            //         object.body.y += speed
-            //     }
-            //     if (keysPressed['a']) {
-            //         object.body.x -= speed
-            //     }
-            // } else 
         }
     }
     function getRandomLightColor() { // random color that will be visible on  black background
@@ -1167,10 +1331,11 @@ window.addEventListener('DOMContentLoaded', (event) => {
                     this.body.xmom /= 3
                     this.body.ymom /= 3
                     this.body.move()
-                    if(this.health > 0){
+                    if (this.health > 0) {
                         eyesack.shots[t].range = -1
                     }
                     this.health -= eyesack.attack
+                    hitaudio.play()
                     if (this.health <= 0) {
                         this.marked = 1
                     }
@@ -1246,6 +1411,10 @@ window.addEventListener('DOMContentLoaded', (event) => {
             this.maxer = 0
             this.slower = 2
             this.slow = 0
+            this.roll = 0
+            if (Math.random() <eyesack.luck) {
+                this.roll = 1
+            }
         }
         draw() {
             if (this.type == 0) {
@@ -1260,6 +1429,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
                     canvas_context.drawImage(keyimg, this.framer * width, 0, width, keyimg.height, this.body.x - this.body.radius, this.body.y - this.body.radius, this.body.radius * 3, this.body.radius * 3)
                     if (this.body.doesPerimeterTouch(eyesack.body)) {
                         eyesack.keys++
+                        keyaudio.play()
                         this.marked = 1
                     }
                 }
@@ -1273,10 +1443,20 @@ window.addEventListener('DOMContentLoaded', (event) => {
                     this.framer %= this.maxer
                 }
                 if (this.marked != 1) {
-                    canvas_context.drawImage(coinimg, this.framer * width, 0, width, coinimg.height, this.body.x - this.body.radius, this.body.y - this.body.radius, this.body.radius * 1.5, this.body.radius * 1.5)
-                    if (this.body.doesPerimeterTouch(eyesack.body)) {
-                        eyesack.coins++
-                        this.marked = 1
+                    if (this.roll == 1) {
+                        canvas_context.drawImage(coinimg5, this.framer * width, 0, width, coinimg5.height, this.body.x - this.body.radius, this.body.y - this.body.radius, this.body.radius * 1.8, this.body.radius * 1.8)
+                        if (this.body.doesPerimeterTouch(eyesack.body)) {
+                            eyesack.coins += 5
+                            coinaudio.play()
+                            this.marked = 1
+                        }
+                    } else {
+                        canvas_context.drawImage(coinimg, this.framer * width, 0, width, coinimg.height, this.body.x - this.body.radius, this.body.y - this.body.radius, this.body.radius * 1.5, this.body.radius * 1.5)
+                        if (this.body.doesPerimeterTouch(eyesack.body)) {
+                            eyesack.coins++
+                            coinaudio.play()
+                            this.marked = 1
+                        }
                     }
                 }
             }
@@ -1291,8 +1471,11 @@ window.addEventListener('DOMContentLoaded', (event) => {
                 if (this.marked != 1) {
                     canvas_context.drawImage(potionimg, this.framer * width, 0, width, potionimg.height, this.body.x - this.body.radius, this.body.y - this.body.radius, this.body.radius * 3, this.body.radius * 3)
                     if (this.body.doesPerimeterTouch(eyesack.body)) {
-                        eyesack.health++
-                        this.marked = 1
+                        if(eyesack.health<12){
+                            eyesack.health++
+                            potionaudio.play()
+                            this.marked = 1
+                        }
                     }
                 }
             }
@@ -1308,13 +1491,102 @@ window.addEventListener('DOMContentLoaded', (event) => {
                     canvas_context.drawImage(bombimg, this.framer * width, 0, width, bombimg.height, this.body.x - this.body.radius, this.body.y - this.body.radius, this.body.radius * 2, this.body.radius * 2)
                     if (this.body.doesPerimeterTouch(eyesack.body)) {
                         eyesack.bombs++
+                        bombaudio.play()
                         this.marked = 1
                     }
                 }
             }
         }
     }
+    class Goods {
+        constructor(x, y, type) {
+            this.body = new Circle(x, y, 12, "transparent")
+            this.type = type
+            this.marked = 0
+            this.framer = 0
+            this.maxer = 0
+            this.slower = 2
+            this.slow = 0
+            this.price = Math.floor(Math.random() * 8)
+        }
+        draw() {
 
+            let width = 32
+            if (this.type == 0) {
+                if (this.marked != 1) {
+                    this.framer = 0
+                    canvas_context.drawImage(attackimg, this.framer * width, 0, width, attackimg.height, this.body.x - this.body.radius, this.body.y - this.body.radius, this.body.radius * 2, this.body.radius * 2)
+                    if (this.body.doesPerimeterTouch(eyesack.body)) {
+                        if (eyesack.coins >= this.price) {
+                            eyesack.attack += 15
+                            this.marked = 1
+                            eyesack.coins -= this.price
+                        }
+                    }
+                }
+            }
+            if (this.type == 1) {
+                if (this.marked != 1) {
+                    this.framer = 0
+                    canvas_context.drawImage(speedimg, this.framer * width, 0, width, speedimg.height, this.body.x - this.body.radius, this.body.y - this.body.radius, this.body.radius * 2, this.body.radius * 2)
+                    if (this.body.doesPerimeterTouch(eyesack.body)) {
+                        if (eyesack.coins >= this.price) {
+                            eyesack.speed += 1
+                            this.marked = 1
+                            eyesack.coins -= this.price
+                        }
+                    }
+                }
+            }
+            if (this.type == 2) {
+                if (this.marked != 1) {
+                    this.framer = 0
+                    canvas_context.drawImage(bulletspeedicon, this.framer * width, 0, width, bulletspeedicon.height, this.body.x - this.body.radius, this.body.y - this.body.radius, this.body.radius * 2, this.body.radius * 2)
+                    if (this.body.doesPerimeterTouch(eyesack.body)) {
+                        if (eyesack.coins >= this.price) {
+                            eyesack.shotspeed += 1
+                            this.marked = 1
+                            eyesack.coins -= this.price
+                        }
+                    }
+                }
+            }
+            if (this.type == 3) {
+                if (this.marked != 1) {
+                    this.framer = 0
+                    canvas_context.drawImage(firerateimg, this.framer * width, 0, width, firerateimg.height, this.body.x - this.body.radius, this.body.y - this.body.radius, this.body.radius * 2, this.body.radius * 2)
+                    if (this.body.doesPerimeterTouch(eyesack.body)) {
+                        if (eyesack.coins >= this.price) {
+                            eyesack.shotrate -= 1
+                            this.marked = 1
+                            eyesack.coins -= this.price
+                        }
+                    }
+                }
+            }
+            if (this.marked != 1) {
+                canvas_context.font = "20px arial"
+                canvas_context.fillStyle = "white"
+                canvas_context.fillText(`$ ${this.price}`, this.body.x - (this.body.radius), this.body.y + (this.body.radius * 3))
+            }
+        }
+    }
+
+    class Store {
+        constructor() {
+            this.items = []
+            for (let t = 0; t < eyesack.storelevel; t++) {
+                let item = new Goods(300 + (t * 200), 360, Math.floor(Math.random() * 4))
+                this.items.push(item)
+            }
+        }
+        draw() {
+            for (let t = 0; t < this.items.length; t++) {
+                this.items[t].draw()
+            }
+        }
+
+    }
     class Room {
         constructor() {
             this.drawn = 0
@@ -1380,6 +1652,12 @@ window.addEventListener('DOMContentLoaded', (event) => {
                 let migo = new Enemy((Math.random() * (this.body2.width - 40)) + this.body2.x + 20, (Math.random() * (this.body2.height - 40)) + this.body2.y + 20, Math.floor(Math.random() * 6))
                 this.enemies.push(migo)
             }
+            if (Math.random() < .1) {
+                this.store = 1
+                this.shop = new Store()
+                this.enemies = []
+                this.enemyhas = 0
+            }
         }
         draw() {
             if (keysPressed[';']) {
@@ -1439,16 +1717,23 @@ window.addEventListener('DOMContentLoaded', (event) => {
                                 eyesack.charge++
                                 eyesack.roomstorage = activeroom
                                 activeroom = this.links[t]
+                                for(let t = 0;t<rooms[activeroom].enemies.length;t++){
+                                    rooms[activeroom].enemies[t].shots = []
+                                }
                                 if (t == 0) {
+                                    dooraudio.play()
                                     eyesack.body.x = 640
                                     eyesack.body.y = 580
                                 } else if (t == 1) {
+                                    dooraudio.play()
                                     eyesack.body.x = 640
                                     eyesack.body.y = 120
                                 } else if (t == 2) {
+                                    dooraudio.play()
                                     eyesack.body.x = 1160
                                     eyesack.body.y = 360
                                 } else if (t == 3) {
+                                    dooraudio.play()
                                     eyesack.body.x = 120
                                     eyesack.body.y = 360
                                 }
@@ -1459,16 +1744,23 @@ window.addEventListener('DOMContentLoaded', (event) => {
                                     eyesack.charge++
                                     eyesack.roomstorage = activeroom
                                     activeroom = this.links[t]
+                                    for(let t = 0;t<rooms[activeroom].enemies.length;t++){
+                                        rooms[activeroom].enemies[t].shots = []
+                                    }
                                     if (t == 0) {
+                                        dooraudio.play()
                                         eyesack.body.x = 640
                                         eyesack.body.y = 580
                                     } else if (t == 1) {
+                                        dooraudio.play()
                                         eyesack.body.x = 640
                                         eyesack.body.y = 120
                                     } else if (t == 2) {
+                                        dooraudio.play()
                                         eyesack.body.x = 1160
                                         eyesack.body.y = 360
                                     } else if (t == 3) {
+                                        dooraudio.play()
                                         eyesack.body.x = 120
                                         eyesack.body.y = 360
                                     }
@@ -1485,6 +1777,9 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
                 for (let t = 0; t < this.items.length; t++) {
                     this.items[t].draw()
+                }
+                if (this.store == 1) {
+                    this.shop.draw()
                 }
                 for (let t = 0; t < this.enemies.length; t++) {
                     this.enemies[t].draw()
@@ -1509,6 +1804,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
 
     class Player {
         constructor() {
+            this.storelevel = 4
+            this.luck = 0.1
             this.hitstun = 0
             this.chargebar = new Rectangle(0, 0, 50, 100, "#00FF00")
             this.notch = new Rectangle(0, 50, 35, 1, "black")
@@ -1518,46 +1815,92 @@ window.addEventListener('DOMContentLoaded', (event) => {
             this.charge = 2
             this.keys = 2
             this.health = 4
+            this.slow = 0
             this.bombs = 1
             this.coins = 0
             this.shotcounter = 0
             this.shotrate = 20
             this.shots = []
             this.shotspeed = 7
-            this.range = 100
+            this.range = 80
             this.attack = 35
             this.bombtimer = 0
+            this.framer = 0
+            this.link = new LineOP(this.body, this.body.clone(), "transparent")
         }
         shoot() {
+
+
+            if (typeof (gamepadAPI.axesStatus[2]) != 'undefined' && Math.abs(gamepadAPI.axesStatus[2]) + Math.abs(gamepadAPI.axesStatus[3]) > .1) {
+                if (typeof (gamepadAPI.axesStatus[3]) != 'undefined' && Math.abs(gamepadAPI.axesStatus[2]) + Math.abs(gamepadAPI.axesStatus[3]) > .1) {
+                        let shot = new Circle(this.body.x, this.body.y, 4, "cyan",gamepadAPI.axesStatus[2]*this.shotspeed, gamepadAPI.axesStatus[3]*this.shotspeed)
+                        shot.range = this.range
+                        vgcontrol(shot, this.speed * .5)
+                        while(Math.sqrt(Math.abs(shot.xmom)*Math.abs(shot.xmom) + Math.abs(shot.ymom)*Math.abs(shot.ymom)) < this.shotspeed){
+                            shot.xmom*=1.01
+                            shot.ymom*=1.01
+                        }
+                        while(Math.sqrt(Math.abs(shot.xmom)*Math.abs(shot.xmom) + Math.abs(shot.ymom)*Math.abs(shot.ymom)) > this.shotspeed){
+                            shot.xmom*=.99
+                            shot.ymom*=.99
+                        }
+
+                        let sight = shot.clone()
+                        sight.xmom*=this.range
+                        sight.ymom*=this.range
+                        sight.move()
+                        this.link = new LineOP(this.body, sight, "red", 2)
+                    }
+                }
+                this.link.draw()
+            
             if (this.shotcounter > this.shotrate) {
-                if (keysPressed['i']) {
+                if (typeof (gamepadAPI.axesStatus[2]) != 'undefined' && Math.abs(gamepadAPI.axesStatus[2]) + Math.abs(gamepadAPI.axesStatus[3]) > .1) {
+                    if (typeof (gamepadAPI.axesStatus[3]) != 'undefined' && Math.abs(gamepadAPI.axesStatus[2]) + Math.abs(gamepadAPI.axesStatus[3]) > .1) {
+                        let shot = new Circle(this.body.x, this.body.y, 4, "cyan",gamepadAPI.axesStatus[2]*this.shotspeed, gamepadAPI.axesStatus[3]*this.shotspeed)
+                        shot.range = this.range
+                        vgcontrol(shot, this.speed * .5)
+                        while(Math.sqrt(Math.abs(shot.xmom)*Math.abs(shot.xmom) + Math.abs(shot.ymom)*Math.abs(shot.ymom)) < this.shotspeed){
+                            shot.xmom*=1.01
+                            shot.ymom*=1.01
+                        }
+                        while(Math.sqrt(Math.abs(shot.xmom)*Math.abs(shot.xmom) + Math.abs(shot.ymom)*Math.abs(shot.ymom)) > this.shotspeed){
+                            shot.xmom*=.99
+                            shot.ymom*=.99
+                        }
+                        this.shots.push(shot)
+                        this.shotcounter = 0
+                        return
+                    }
+               }else if (keysPressed['i']) {
                     let shot = new Circle(this.body.x, this.body.y, 4, "cyan", 0, -this.shotspeed)
                     shot.range = this.range
                     vcontrol(shot, this.speed * .5)
+                    vgcontrol(shot, this.speed * .5)
                     this.shots.push(shot)
                     this.shotcounter = 0
                     return
-                }
-                if (keysPressed['j']) {
+                }else if (keysPressed['j']) {
                     let shot = new Circle(this.body.x, this.body.y, 4, "cyan", -this.shotspeed, 0)
                     shot.range = this.range
                     vcontrol(shot, this.speed * .5)
+                    vgcontrol(shot, this.speed * .5)
                     this.shots.push(shot)
                     this.shotcounter = 0
                     return
-                }
-                if (keysPressed['k']) {
+                }else if (keysPressed['k']) {
                     let shot = new Circle(this.body.x, this.body.y, 4, "cyan", 0, this.shotspeed)
                     shot.range = this.range
                     vcontrol(shot, this.speed * .5)
+                    vgcontrol(shot, this.speed * .5)
                     this.shots.push(shot)
                     this.shotcounter = 0
                     return
-                }
-                if (keysPressed['l']) {
+                }else if (keysPressed['l']) {
                     let shot = new Circle(this.body.x, this.body.y, 4, "cyan", this.shotspeed, 0)
                     shot.range = this.range
                     vcontrol(shot, this.speed * .5)
+                    vgcontrol(shot, this.speed * .5)
                     this.shots.push(shot)
                     this.shotcounter = 0
                     return
@@ -1567,22 +1910,23 @@ window.addEventListener('DOMContentLoaded', (event) => {
             }
 
         }
-        bomb(){
-            if(this.bombtimer <= 0){
-                if(this.bombs> 0){
-                    for(let t = 0;t<60;t++){
-                        let shot = new Circle(this.body.x, this.body.y, 5, "red", (Math.random()-.5)*10,  (Math.random()-.5)*10)  
+        bomb() {
+            if (this.bombtimer <= 0) {
+                if (this.bombs > 0) {
+                    for (let t = 0; t < 60; t++) {
+                        let shot = new Circle(this.body.x, this.body.y, 5, "red", (Math.random() - .5) * 10, (Math.random() - .5) * 10)
                         shot.range = this.range
                         this.shots.push(shot)
                     }
                     this.bombs--
+                    blastaudio.play()
                     this.bombtimer = 30
                 }
             }
-            
+
         }
         draw() {
-            if(keysPressed['e']){
+            if (gamepadAPI.buttonsStatus.includes('RB') || keysPressed['e']) {
                 this.bomb()
             }
             this.bombtimer--
@@ -1597,15 +1941,44 @@ window.addEventListener('DOMContentLoaded', (event) => {
             canvas_context.fillText(`Bombs: ${this.bombs}`, 700, 20)
             canvas_context.fillText(`Coins: ${this.coins}`, 700, 40)
             canvas_context.fillText(`Health: ${this.health}`, 700, 60)
+
+
+            this.slow += 1
+            if(this.slow%2 == 0){
+                this.framer++
+            }
+            
+            for(let t = 0;t<this.health;t++){
+                canvas_context.drawImage(heartimg, ((this.framer +t)%6)* 32, 0, 32, heartimg.height, 700 +(32*t), 60,32, 32)
+             
+            }
             this.chargebar.height = this.charge * 50
             this.chargebar.height = Math.min(this.chargebar.height, 100)
             this.chargebar.draw()
             this.notch.draw()
-            control(this.body, this.speed)
+            vcontrol(this.body, this.speed * .5)
+            vgcontrol(this.body, (this.speed*.5))
+            this.body.friction = .9
+            let clone = this.body.clone()
+            while(Math.abs(this.body.xmom)+Math.abs(this.body.ymom) > this.speed*.5){
+                this.body.xmom*=.99
+                this.body.ymom*=.99
+            }
+            this.body.frictiveMove()
+            if (!rooms[activeroom].body2.isPointInside(this.body)) {
+                this.body.x = clone.x
+                this.body.y = clone.y
+            }
+            control(this.body, this.speed-(this.speed*.5))
+            gcontrol(this.body, this.speed-(this.speed*.5))
+            scontrol(this.link.target, this.speed)
             this.body.draw()
             if (this.charge >= 2) {
-                if (keysPressed[' ']) {
+                if (gamepadAPI.buttonsStatus.includes('LB') || keysPressed[' ']) {
                     activeroom = this.roomstorage
+                    for(let t = 0;t<rooms[activeroom].enemies.length;t++){
+                        rooms[activeroom].enemies[t].shots = []
+                    }
                     this.charge = 0
                 }
             }
@@ -1624,44 +1997,47 @@ window.addEventListener('DOMContentLoaded', (event) => {
                     this.shots.splice(t, 1)
                 }
             }
-            if(this.hitstun <= 0){
-            for (let t = 0; t < rooms[activeroom].enemies.length; t++) {
-                for (let k = 0; k < rooms[activeroom].enemies[t].shots.length; k++) {
-                    if (rooms[activeroom].enemies[t].shots[k].doesPerimeterTouch(this.body)) {
+            if (this.hitstun <= 0) {
+                for (let t = 0; t < rooms[activeroom].enemies.length; t++) {
+                    for (let k = 0; k < rooms[activeroom].enemies[t].shots.length; k++) {
+                        if (rooms[activeroom].enemies[t].shots[k].doesPerimeterTouch(this.body)) {
+                            this.health--
+                            painaudio.play()
+                            rooms[activeroom].enemies[t].shots[k].range = -1
+                            this.hitstun = 100
+                        }
+                    }
+                    if (rooms[activeroom].enemies[t].body.doesPerimeterTouch(this.body)) {
                         this.health--
-                        rooms[activeroom].enemies[t].shots[k].range = -1
+                        painaudio.play()
                         this.hitstun = 100
                     }
                 }
-                if (rooms[activeroom].enemies[t].body.doesPerimeterTouch(this.body)) {
-                    this.health--
-                    this.hitstun = 100
-                }
-            }
-            this.body.color = "blue"
-            }else{
+                this.body.color = "blue"
+            } else {
 
-            for (let t = 0; t < rooms[activeroom].enemies.length; t++) {
-                for (let k = 0; k < rooms[activeroom].enemies[t].shots.length; k++) {
-                    if (rooms[activeroom].enemies[t].shots[k].doesPerimeterTouch(this.body)) {
-                        rooms[activeroom].enemies[t].shots[k].range = -1
+                for (let t = 0; t < rooms[activeroom].enemies.length; t++) {
+                    for (let k = 0; k < rooms[activeroom].enemies[t].shots.length; k++) {
+                        if (rooms[activeroom].enemies[t].shots[k].doesPerimeterTouch(this.body)) {
+                            rooms[activeroom].enemies[t].shots[k].range = -1
+                        }
                     }
                 }
-            }
                 this.hitstun--
-                if(this.hitstun%20 < 5){
+                if (this.hitstun % 20 < 5) {
                     this.body.color = "blue"
-                }else if(this.hitstun%20 < 10){
+                } else if (this.hitstun % 20 < 10) {
                     this.body.color = "#0055FF"
-                }else if(this.hitstun%20 < 15){
+                } else if (this.hitstun % 20 < 15) {
                     this.body.color = "#00AAFF"
-                }else{
+                } else {
                     this.body.color = "#00CCFF"
                 }
             }
         }
     }
 
+    let eyesack = new Player()
     let key = new Pickup(200, 200, 1)
 
     let setup_canvas = document.getElementById('canvas') //getting canvas from document
@@ -1675,7 +2051,6 @@ window.addEventListener('DOMContentLoaded', (event) => {
     let rooms = []
     let room1 = new Room()
     // let room2 = new Room()
-    let eyesack = new Player()
     // let enemy = new Enemy(100, 100)
     let started = 0
     let easy = new Rectangle(200, 200, 200, 100, "#00FF00")
@@ -1684,26 +2059,26 @@ window.addEventListener('DOMContentLoaded', (event) => {
     function main() {
         canvas_context.clearRect(0, 0, canvas.width, canvas.height)  // refreshes the image
         gamepadAPI.update()
-        if (started == 1) { 
+        if (started == 1) {
             // for (let t = 0; t < rooms.length; t++) {
-                rooms[activeroom].draw()
+            rooms[activeroom].draw()
             // }
             eyesack.draw()
-            if(eyesack.health<=0){
-                 rooms = []
-                 activeroom = 0
-                 roomcounter = 0
-                 room1 = new Room()
-                 eyesack = new Player()
-                 started = 0
+            if (eyesack.health <= 0) {
+                rooms = []
+                activeroom = 0
+                roomcounter = 0
+                room1 = new Room()
+                eyesack = new Player()
+                started = 0
             }
-        }else{
+        } else {
             easy.draw()
             hard.draw()
             canvas_context.font = "50px arial"
             canvas_context.fillStyle = "Black"
-            canvas_context.fillText("Easy", easy.x +50, easy.y + 50)
-            canvas_context.fillText("Hard", hard.x +50, hard.y + 50)
+            canvas_context.fillText("Easy", easy.x + 50, easy.y + 50)
+            canvas_context.fillText("Hard", hard.x + 50, hard.y + 50)
         }
         // key.draw()
         // enemy.draw()
